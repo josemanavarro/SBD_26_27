@@ -1,3 +1,4 @@
+name: Tarea1
 services:
   mosquitto:
     image: eclipse-mosquitto
@@ -26,6 +27,48 @@ services:
       - t1-lan
     depends_on:
       - mosquitto
+  # compose.yaml
+  db:
+    image: influxdb:2
+    container_name: influxdb_t1
+    ports:
+      - "${INFLUXDB_PORT:-8086}:8086"
+    env_file:
+      - .env
+    secrets:
+      - influxdb2-admin-username
+      - influxdb2-admin-password
+      - influxdb2-admin-token
+    volumes:
+      - ./influxdb/data:/var/lib/influxdb2
+      - ./influxdb/config:/etc/influxdb2
+    networks:
+      - t1-lan
+    depends_on:
+      - node-red
+  
+  grafana:
+    image: grafana/grafana
+    container_name: grafana_t1
+    environment:
+      - .env
+    ports:
+      - '3000:3000'
+    volumes:
+      - './grafana/data:/var/lib/grafana'
+    networks:
+      - t1-lan
+    depends_on:
+      - db
+
+secrets:
+  influxdb2-admin-username:
+    file: ./.env.influxdb2-admin-username
+  influxdb2-admin-password:
+    file: ./.env.influxdb2-admin-password
+  influxdb2-admin-token:
+    file: ./.env.influxdb2-admin-token
+
 
 networks:
   t1-lan:
