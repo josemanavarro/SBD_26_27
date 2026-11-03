@@ -1,0 +1,350 @@
+[
+    {
+        "id": "6c64554957e0e3ce",
+        "type": "tab",
+        "label": "Flujo 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "d546e0659d18eb07",
+        "type": "inject",
+        "z": "6c64554957e0e3ce",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 120,
+        "wires": [
+            [
+                "496343fabc3451b1"
+            ]
+        ]
+    },
+    {
+        "id": "3bed8c7da209ea20",
+        "type": "debug",
+        "z": "6c64554957e0e3ce",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 820,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "496343fabc3451b1",
+        "type": "function",
+        "z": "6c64554957e0e3ce",
+        "name": "function 1",
+        "func": "let tiempo = msg.payload\n\nmsg.payload = \"Hola holita\"\nmsg.tiempo = tiempo\nmsg.topic = \"Nodo Función\"\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 120,
+        "wires": [
+            [
+                "fefe108da3d35995"
+            ]
+        ]
+    },
+    {
+        "id": "fefe108da3d35995",
+        "type": "function",
+        "z": "6c64554957e0e3ce",
+        "name": "function 2",
+        "func": "let texto = msg.payload\n\nmsg.payload = texto.toUpperCase()\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 120,
+        "wires": [
+            [
+                "3bed8c7da209ea20"
+            ]
+        ]
+    },
+    {
+        "id": "55aeb7cb233b9a82",
+        "type": "debug",
+        "z": "6c64554957e0e3ce",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 760,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "e1c7c2f98a39d7c9",
+        "type": "function",
+        "z": "6c64554957e0e3ce",
+        "name": "function 3",
+        "func": "let raw = msg.payload;\nlet aula = msg.topic || \"Desconocida\";\n\n// Reemplazar coma por punto si es un string\nif (typeof raw === \"string\") {\n    raw = raw.replace(',', '.').trim();\n}\n\nlet lectura = Number(raw);\n\nlet esValido = lectura !== null && typeof lectura !== \"boolean\" && !isNaN(lectura);\n\nif (esValido==true) {\n\n    msg.payload = {\n        ubicacion: aula,\n        celsius: Number(lectura.toFixed(2)),\n        fahrenheit: Number((((lectura * 9)/5)+32).toFixed(2)),\n        kelvin: Number((lectura + 273.15).toFixed(2)),\n        timestamp: new Date().toISOString(),\n        origen: \"Node-RED\",\n        valido: esValido\n    };\n} else {\n    msg.payload = {\n        ubicacion: aula,\n        celsius: null,\n        fahrenheit: null,\n        kelvin: null,\n        timestamp: new Date().toISOString(),\n        origen: \"Node-RED\",\n        valido: esValido        \n    };\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 240,
+        "wires": [
+            [
+                "55aeb7cb233b9a82",
+                "79bc0ffa5ef01167"
+            ]
+        ]
+    },
+    {
+        "id": "b735f16622019a35",
+        "type": "mqtt in",
+        "z": "6c64554957e0e3ce",
+        "name": "TEmperatura",
+        "topic": "sbd/aula211/tmp",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "6c55a1128a1f69bb",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 170,
+        "y": 360,
+        "wires": [
+            [
+                "991aa1134a12d6df",
+                "e1c7c2f98a39d7c9"
+            ]
+        ]
+    },
+    {
+        "id": "991aa1134a12d6df",
+        "type": "function",
+        "z": "6c64554957e0e3ce",
+        "name": "function 4",
+        "func": "let contador = context.get(\"contador\") || 0;\ncontador = contador + 1;\nlet medida = msg.payload;\n\nlet lista = context.get(\"historico\") || [];\nlista.push({\n    orden: contador,\n    valor: msg.payload,\n    hora: new Date().toLocaleTimeString()\n});\n\ncontext.set(\"contador\", contador);\ncontext.set(\"historico\",lista);\n\nmsg.payload = {\n    mensajeActual: msg.payload,\n    ejecuciones: contador,\n    ultimos: lista.slice(-3)\n};\n\nif (isNaN(medida)){\n    return {[\"ERROR\"]:[msg] }\n}\n\nreturn msg;",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// El código añadido aquí se ejecutará una vez\n// cuando el nodo es iniciado.\ncontext.set(\"contador\", 0);\ncontext.set(\"historico\", []);",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 380,
+        "wires": [
+            [
+                "d6aa18c2735529e2"
+            ],
+            [
+                "7a594fd83adb7dd1"
+            ]
+        ]
+    },
+    {
+        "id": "d6aa18c2735529e2",
+        "type": "debug",
+        "z": "6c64554957e0e3ce",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 740,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "7a594fd83adb7dd1",
+        "type": "debug",
+        "z": "6c64554957e0e3ce",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 740,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "bd65b5df95779a43",
+        "type": "catch",
+        "z": "6c64554957e0e3ce",
+        "name": "Excepciones",
+        "scope": null,
+        "uncaught": false,
+        "x": 170,
+        "y": 700,
+        "wires": [
+            [
+                "d590035df7870d8a"
+            ]
+        ]
+    },
+    {
+        "id": "d590035df7870d8a",
+        "type": "debug",
+        "z": "6c64554957e0e3ce",
+        "name": "Errores",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 780,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "79bc0ffa5ef01167",
+        "type": "influxdb out",
+        "z": "6c64554957e0e3ce",
+        "influxdb": "9b28e24e0a5988fd",
+        "name": "Salida a datos",
+        "measurement": "Temperatura",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "sbd",
+        "bucket": "tarea1",
+        "x": 780,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "9095e06a7eacd971",
+        "type": "complete",
+        "z": "6c64554957e0e3ce",
+        "name": "",
+        "scope": [
+            "79bc0ffa5ef01167"
+        ],
+        "uncaught": false,
+        "x": 170,
+        "y": 620,
+        "wires": [
+            [
+                "6b4e25e7dff8e27a"
+            ]
+        ]
+    },
+    {
+        "id": "6b4e25e7dff8e27a",
+        "type": "debug",
+        "z": "6c64554957e0e3ce",
+        "name": "Exitos",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 750,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "6c55a1128a1f69bb",
+        "type": "mqtt-broker",
+        "name": "T1",
+        "broker": "mosquitto",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "node/inicio",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "Inicio Node-RED",
+        "birthMsg": {},
+        "closeTopic": "node/fin",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "Finalizo Node-RED",
+        "closeMsg": {},
+        "willTopic": "node/error",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "Error en Node-RED",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "9b28e24e0a5988fd",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "Mi InfluxBD",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://db:8086",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "fb39b9fb432a5897",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-contrib-influxdb": "0.7.0"
+        }
+    }
+]
